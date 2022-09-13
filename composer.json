@@ -18,7 +18,7 @@
     }
   ],
     "require": {
-      "php": "^7.0",
+      "php": ">=8.0",
         "guzzlehttp/guzzle": "^6.3",
         "respect/validation": "1.1.15"
     },
