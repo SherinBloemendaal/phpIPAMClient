@@ -1,165 +1,355 @@
-# phpIPAMClient
+# phpIPAM API Client
 
-phpIPAM is an open-source IP address management web application which can be controlled by an api.
-This is an api client for php which can be used to control phpIPAM.
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.1-blue.svg)](https://php.net)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Composer](https://img.shields.io/badge/composer-package-orange.svg)](https://packagist.org/packages/sherinbloemendaal/phpipam-client)
 
-Learn more:
+A modern, fully-typed PHP client library for the [phpIPAM](https://phpipam.net/) API. This library provides an object-oriented interface for managing IP addresses, subnets, VLANs, and other network resources through phpIPAM's REST API.
 
-* [phpIPAM Homepage](https://phpipam.net/)
-* [phpIPAM Source](https://github.com/phpipam/phpipam)
-* [phpIPAM API Docs](https://phpipam.net/api/api_documentation/)
+## ✨ Features
 
-## Installation
-You can install this package through composer:
+- 🔒 **Secure connections** with SSL and encryption support
+- 🏗️ **Object-oriented design** with full type safety (PHP 8.1+)
+- 🚀 **Modern PHP practices** with strict types and union types
+- 📚 **Comprehensive API coverage** for all phpIPAM resources
+- 🛡️ **Exception handling** with detailed error responses
+- 🔄 **Automatic object/ID conversion** for seamless development
+- 📖 **Fluent interface** for method chaining
 
-At the moment I suggest to stay at the 1.0.x-dev version:
+## 📋 Requirements
 
-`composer require colq2/phpipam-client:1.0.x-dev`
+- **PHP 8.1** or higher
+- **ext-json** extension
+- **ext-openssl** extension (for encryption)
+- **Guzzle HTTP** library
+- **phpIPAM** server with API enabled
 
-cause i always find some small issues and todo's that I'm fixing on this branch.
+## 📦 Installation
 
-Else you can go with the current release:
+Install via Composer:
 
-`composer require colq2/phpipam-client`
+```bash
+# Latest stable release
+composer require sherinbloemendaal/phpipam-client
+```
 
+## 🚀 Quick Start
 
-## Basic Usage
+### Basic Connection
 
-You can use this client in two ways.
-1. Use the controller classes and let the client manage the most things for you
-2. Use the call method on the client object
+```php
+<?php
 
-Notice: I only provide secure connections to the server. The API provides two ways to do that:
-* SSL
-* Own encryption
+declare(strict_types=1);
 
-Read more on [Security](#security)
+use SherinBloemendaal\PhpIPAMClient\PhpIPAMClient;
+use SherinBloemendaal\PhpIPAMClient\Connection\Connection;
 
+// Initialize client with SSL (recommended)
+$client = new PhpIPAMClient(
+    url: 'https://phpipam.example.com',
+    appID: 'myApp',
+    username: 'admin',
+    password: 'secret',
+    apiKey: '', // Not needed for SSL
+    securityMethod: Connection::SECURITY_METHOD_SSL
+);
 
-### Initialize connection
-`use colq2\PhpIPAMClient;`
-
-`$client = new PhpIPAMClient('1.2.3.4', 'myApp', 'name', 'password', 'apikey');`
-
-or
-
-`use colq2\PhpIPAMClient\Connection\Connection;`
-
-`Connection::initializeConnection('1.2.3.4', 'myApp', 'name', 'password', 'apikey');`
-
-### First Way
-
-I will use the sections controller as Example.
-It's important to understand, that this api ist strong object oriented. This means, that the controllers can be used as objects that represents the objects server side. The objects provides getter and setter for their attributes. And you can set client side objects to the attribute. This client handles to conversion between Object and IDs on it's own!
-
-Import the controller with `use colq2\PhpIPAMClient\Controller\Section;` at the top.
-#### Get all sections
-
-To get all sections use the getAll method. This return an array with all sections as `colq2\Controller\Section` instances.
-
-`$sections = Section::getAll();`
-
-#### Get section by id or name
-`$section = Section::getByID('1');`
-
-`$section = Section::getByName('name');`
-
-#### Create a section
-You can use the construct or the create method.
-
-With the construct:
-
-`$section = new Section(['params_array']);`
-
-And use the getter and setter:
-
-`$section->setDescription();`
-
-You need to use the patch method to safe it:
-
-`$section->patch();`
-
-#### Patch a section
-
-To patch a section use the setter on it or an array to the method. Or both!
-But the array will override the given attributes.
-
-`$section->setDescription('A cool description!');`
-
-#### Delete a section
-
-`$section->delete();`
-
-### Second Way
-`$response = $client->call('method', 'controller', ['identifier_array'], ['param_array']);`
-
-This will return an instance of `colq2\Connection\Response`.
-You can access the data using the getData method.
-
-`$data = $response->getData()`
-
-To get the whole response body use the getBody method.
-
-`$body = $response->getBody()`
-
-Learn more on [Response Object](docs/response.md)
-
-## Controller
-
-#### Notice
-
-This docs are not ready yet. I'm working on it. Read the phpIPAM Api docs. I mapped the request url's to name. For example:
-* GET   /api/my_app/subnets/{id}/ => $subnet = Subnet::getById($id);
-* GET   /api/my_app/subnets/{id}/usage/ => $subnet->getUsage();
-* PATCH /api/my_app/subnets/{id}/ => Subnet::patch();
-
-For more detailed information for all methods and controller look at [phpIPAM website](https://phpipam.net) and at the following controller documentation:
-
-* [Sections](docs/section.md)
-* [Subnets](docs/subnet.md)
-* [Folders](docs/folder.md)
-* [VLAN](docs/vlan.md)
-* [Address](docs/address.md)
-* [L2 Domain](docs/L2Domain.md)
-* [VRF](docs/vrf.md)
-* [Device](docs/device.md)
-
-## Security
-
-The last parameter a of the construct is a value of the following constants:
-
-`use colq2\PhpIPAMClient\Connection\Connection`
-* `Connection::SECURITY_METHOD_SSL`
-* `Connection::SECURITY_METHOD_CRYPT`
-* `Connection::SECURITY_METHOD_BOTH`
-
-I recommend to use the SLL method. For this you need a https connection to your Server!
-
-If you don't have the possibility to use SSL use crypt. You need to provide the API Key from the Backend.
-Furthermore you need to change one file serverside cause phpipam uses `mcrypt` but this method is deprecated. I am using `openssl`. 
-
-[index.php](https://github.com/colq2/phpipam/blob/master/api/index.php)
-
-It is on my repo but i will stay in contact with the developer of phpipam so that we can find together a solution for that. 
-
-`$client = new PhpIPAMClient('www.example.com/phpipam', 'myApp','' , '', 'your app key, Connection::SECURITY_METHOD_CRYPT)`
-
-And also if you are paranoid security fanatics (like me) use the `Connection::SECURITY_METHOD_BOTH`
-
-`$client = new PhpIPAMClient('https://www.example.com/phpipam', 'myApp','' , '', 'your app key, Connection::SECURITY_METHOD_BOTH)`
-
-## Exceptions
-
-There are two types of Exceptions:
-* `PhpIPAMException`
-
-This will be thrown when something went wrong with the api client.
-
-* `PhpIPAMRequestException`
-
-This will be thrown if a request fails. This Exception saves the response so you can lookup the error:
-`$response = $e->getResponse();`
-
-Read more on [Response Object](docs/response.md)
-## License
-MIT
+// Or initialize connection statically
+Connection::initializeConnection(
+    url: 'https://phpipam.example.com',
+    appID: 'myApp', 
+    username: 'admin',
+    password: 'secret'
+);
+```
+
+### Working with Sections
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Controller\Section;
+
+// Get all sections
+$sections = Section::getAll();
+
+// Get section by ID
+$section = Section::getByID(1);
+
+// Get section by name
+$section = Section::getByName('Production');
+
+// Create new section
+$section = Section::post([
+    'name' => 'Development',
+    'description' => 'Development networks',
+    'strictMode' => true
+]);
+
+// Update section
+$section->setDescription('Updated description')
+        ->setStrictMode(false)
+        ->patch();
+
+// Delete section
+$section->delete();
+```
+
+### Working with Subnets
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Controller\Subnet;
+use SherinBloemendaal\PhpIPAMClient\Controller\Section;
+
+// Get all subnets
+$subnets = Subnet::getAll();
+
+// Create subnet in a section
+$section = Section::getByName('Production');
+$subnet = Subnet::post([
+    'subnet' => '192.168.1.0',
+    'mask' => 24,
+    'description' => 'Web servers',
+    'sectionId' => $section, // Can use object or ID
+]);
+
+// Get subnet usage
+$usage = $subnet->getUsage();
+
+// Get addresses in subnet  
+$addresses = $subnet->getAddresses();
+
+// Find first free IP
+$freeIP = $subnet->getFirstFree();
+```
+
+### Working with IP Addresses
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Controller\Address;
+
+// Search for IP address
+$addresses = Address::getSearchByIP('192.168.1.100');
+
+// Get address by IP and subnet
+$address = Address::getByIPAndSubnet('192.168.1.100', $subnet);
+
+// Create new address
+$address = Address::postFirstFree($subnet, [
+    'hostname' => 'web01.example.com',
+    'description' => 'Web server',
+    'owner' => 'IT Department'
+]);
+
+// Update address
+$address->setHostname('web01-new.example.com')
+        ->setDescription('Updated web server')
+        ->patch();
+```
+
+## 🔐 Security Methods
+
+The client supports three security methods:
+
+### SSL (Recommended)
+```php
+$client = new PhpIPAMClient(
+    url: 'https://phpipam.example.com',
+    appID: 'myApp',
+    username: 'admin', 
+    password: 'secret',
+    apiKey: '',
+    securityMethod: Connection::SECURITY_METHOD_SSL
+);
+```
+
+### Encryption
+```php
+$client = new PhpIPAMClient(
+    url: 'http://phpipam.example.com',
+    appID: 'myApp',
+    username: '',
+    password: '',
+    apiKey: 'your-api-key',
+    securityMethod: Connection::SECURITY_METHOD_CRYPT
+);
+```
+
+### Both (Maximum Security)
+```php
+$client = new PhpIPAMClient(
+    url: 'https://phpipam.example.com',
+    appID: 'myApp',
+    username: 'admin',
+    password: 'secret', 
+    apiKey: 'your-api-key',
+    securityMethod: Connection::SECURITY_METHOD_BOTH
+);
+```
+
+## 🎯 Usage Patterns
+
+### Object-Oriented Approach (Recommended)
+
+Use controller classes for type-safe, object-oriented API interaction:
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Controller\{Section, Subnet, Address, VLAN};
+
+// Fluent interface with method chaining
+$section = Section::getByName('Production')
+    ->setDescription('Production environment')
+    ->patch();
+
+// Object relationships - automatic ID conversion
+$subnet = Subnet::post([
+    'subnet' => '10.0.0.0',
+    'mask' => 16,
+    'sectionId' => $section, // Pass object, not ID
+]);
+
+// Work with related objects
+$addresses = $subnet->getAddresses();
+$firstFree = Address::postFirstFree($subnet, [
+    'hostname' => 'server01.prod.local'
+]);
+```
+
+### Direct API Calls
+
+For advanced use cases, call the API directly:
+
+```php
+// Raw API call
+$response = $client->call('GET', 'sections', [1], []);
+$data = $response->getData();
+
+// Check response
+if ($response->isSuccess()) {
+    echo "Success: " . $response->getMessage();
+} else {
+    echo "Error: " . $response->getMessage();
+}
+```
+
+## 🗂️ Available Controllers
+
+| Controller | Description | Key Methods |
+|------------|-------------|-------------|
+| **Section** | Network sections | `getAll()`, `getByName()`, `getAllSubnets()` |
+| **Subnet** | IP subnets | `getUsage()`, `getAddresses()`, `getFirstFree()` |
+| **Address** | IP addresses | `getSearchByIP()`, `postFirstFree()`, `getPing()` |
+| **VLAN** | Virtual LANs | `getSubnets()`, `getSearch()` |
+| **VRF** | Virtual routing | `getSubnets()`, `getSections()` |
+| **Device** | Network devices | `getAddresses()`, `getSubnets()` |
+| **L2Domain** | Layer 2 domains | `getVLANs()` |
+
+## ⚠️ Exception Handling
+
+The library provides two exception types:
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Exception\{PhpIPAMException, PhpIPAMRequestException};
+
+try {
+    $section = Section::getByID(999);
+} catch (PhpIPAMRequestException $e) {
+    // API request failed
+    $response = $e->getResponse();
+    echo "API Error: " . $response->getMessage();
+    echo "HTTP Code: " . $response->getCode();
+} catch (PhpIPAMException $e) {
+    // Client library error  
+    echo "Client Error: " . $e->getMessage();
+}
+```
+
+## 🔧 Advanced Configuration
+
+### Custom Connection Management
+
+```php
+use SherinBloemendaal\PhpIPAMClient\Connection\Connection;
+
+// Initialize once, use everywhere
+Connection::initializeConnection(
+    url: 'https://phpipam.example.com',
+    appID: 'myApp',
+    username: 'admin',
+    password: 'secret'
+);
+
+// Get connection instance
+$connection = Connection::getInstance();
+
+// Check token status
+$token = $connection->getToken();
+$expires = $connection->getTokenExpires();
+```
+
+### Working with Custom Fields
+
+```php
+// Get custom fields for addresses
+$customFields = Address::getCustomFields();
+
+// Create address with custom fields
+$address = Address::postFirstFree($subnet, [
+    'hostname' => 'server01',
+    'custom_Environment' => 'Production',
+    'custom_Owner' => 'IT Team'
+]);
+```
+
+## 📚 API Reference
+
+### Core Methods
+
+All controllers inherit these base methods:
+
+- `getAll(): array` - Get all objects
+- `getByID(int $id): static` - Get object by ID  
+- `post(array $params): static` - Create new object
+- `patch(array $params): bool` - Update object
+- `delete(): bool` - Delete object
+
+### Response Object
+
+```php
+$response = $client->call('GET', 'sections');
+
+$response->getCode();      // HTTP status code
+$response->isSuccess();    // Success boolean
+$response->getMessage();   // Response message
+$response->getData();      // Response data
+$response->getTime();      // Response time
+$response->getBody();      // Full response body
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. **Code Style**: Follow PSR-12 coding standards
+2. **Type Safety**: Use strict types and proper type declarations
+3. **Testing**: Add tests for new features
+4. **Documentation**: Update documentation for API changes
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Related Links
+
+- [phpIPAM Homepage](https://phpipam.net/)
+- [phpIPAM API Documentation](https://phpipam.net/api/api_documentation/)
+- [phpIPAM GitHub Repository](https://github.com/phpipam/phpipam)
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/sherinbloemendaal/phpipam-client/issues)
+- **Documentation**: [API Documentation](docs/)
+- **Community**: [phpIPAM Community](https://phpipam.net/community/)
+
+---
+
+Made with ❤️ for the phpIPAM community
