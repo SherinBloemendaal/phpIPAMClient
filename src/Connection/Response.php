@@ -1,95 +1,75 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Oliver
- * Date: 07.01.2018
- * Time: 01:48
- */
 
-namespace colq2\PhpIPAMClient\Connection;
+declare(strict_types=1);
 
+namespace SherinBloemendaal\PhpIPAMClient\Connection;
 
 class Response
 {
-	protected $code;
-	protected $success;
-	protected $message;
-	protected $data;
-	protected $time;
+    protected int $code;
+    protected ?bool $success;
+    protected ?string $message;
+    protected mixed $data;
+    protected float $time;
 
-	protected $body;
+    protected array $body;
 
-	public function __construct(\GuzzleHttp\Psr7\Response $response)
-	{
-		//Get Body from guzzle response
-		$body       = json_decode((string) $response->getBody(), true);
-		$this->body = $body;
+    public function __construct(\GuzzleHttp\Psr7\Response $response)
+    {
+        // Get Body from guzzle response
+        $body = json_decode((string) $response->getBody(), true);
+        $this->body = $body;
 
-		$this->code = $body['code'];
+        $this->code = $body['code'];
 
-		if (isset($body['success']))
-		{
-			$this->success = (bool) $body['success'];
-		}
+        if (isset($body['success'])) {
+            $this->success = (bool) $body['success'];
+        }
 
-		if (isset($body['message']))
-		{
-			$this->message = $body['message'];
-		}
+        if (isset($body['message'])) {
+            $this->message = $body['message'];
+        }
 
-		if (isset($body['data']))
-		{
-			$this->data = $body['data'];
-		}
+        if (isset($body['data'])) {
+            $this->data = $body['data'];
+        }
 
-		$this->time = $body['time'];
-	}
+        $this->time = $body['time'];
+    }
 
-	/**
-	 * @return integer
-	 */
-	public function getCode()
-	{
-		return $this->code;
-	}
+    public function getCode(): int
+    {
+        return $this->code;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getMessage()
-	{
-		return $this->message;
-	}
+    public function getMessage(): ?string
+    {
+        return $this->message;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function isSuccess(): bool
-	{
-		return $this->success;
-	}
+    public function isSuccess(): bool
+    {
+        return $this->success;
+    }
 
-	/**
-	 * @return string|array|null
-	 */
-	public function getData()
-	{
-		return $this->data;
-	}
+    /**
+     * @return string|array|null
+     */
+    public function getData(): mixed
+    {
+        return $this->data;
+    }
 
-	/**
-	 * @return double
-	 */
-	public function getTime()
-	{
-		return $this->time;
-	}
+    public function getTime(): float
+    {
+        return $this->time;
+    }
 
-	/**
-	 * @return mixed
-	 */
-	public function getBody()
-	{
-		return $this->body;
-	}
+    /**
+     * @return mixed
+     */
+    public function getBody(): array
+    {
+        return $this->body;
+    }
 }

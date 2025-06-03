@@ -1,160 +1,120 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: sonyon
- * Date: 09.01.18
- * Time: 11:38
- */
 
-namespace colq2\PhpIPAMClient\Controller;
+declare(strict_types=1);
 
+namespace SherinBloemendaal\PhpIPAMClient\Controller;
 
 class L2Domain extends BaseController
 {
-	protected static $controllerName = 'l2domains';
+    protected static string $controllerName = 'l2domains';
 
-	protected $id;
-	protected $name;
-	protected $description;
-	protected $sections;
-	protected $editDate;
+    protected int $id;
+    protected ?string $name;
+    protected ?string $description;
+    protected ?array $sections;
+    protected ?string $editDate;
 
-	protected static function transformParamsToIDs(array $params): array
-	{
-		return $params;
-	}
+    protected static function transformParamsToIDs(array $params): array
+    {
+        return $params;
+    }
 
-	public static function getAll()
-	{
-		$response = self::_getStatic();
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
-		$domains = [];
+    public static function getAll(): array
+    {
+        $response = self::_getStatic();
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
+        $domains = [];
 
-		foreach ($response->getData() as $domain)
-		{
-			$domains[] = new L2Domain($domain);
-		}
+        foreach ($response->getData() as $domain) {
+            $domains[] = new self($domain);
+        }
 
-		return $domains;
-	}
+        return $domains;
+    }
 
+    public function getVLANs(): array
+    {
+        $response = $this->_get([$this->id, 'vlans']);
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
+        $vlans = [];
 
-	public function getVLANs()
-	{
-		$response = $this->_get([$this->id, 'vlans']);
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
-		$vlans = [];
+        foreach ($response->getData() as $vlan) {
+            $vlans[] = new VLAN($vlan);
+        }
 
-		foreach ($response->getData() as $vlan)
-		{
-			$vlans[] = new VLAN($vlan);
-		}
+        return $vlans;
+    }
 
-		return $vlans;
-	}
+    public function patch(array $params = []): bool
+    {
+        $this->setParams($params);
+        $params = $this->getParams();
 
-	public function patch(array $params = array())
-	{
-		$this->setParams($params);
-		$params = $this->getParams();
+        return $this->_patch([], $params)->isSuccess();
+    }
 
-		return $this->_patch([], $params)->isSuccess();
-	}
+    public function delete(): bool
+    {
+        return $this->_delete([$this->id])->isSuccess();
+    }
 
-	public function delete()
-	{
-		return $this->_delete([$this->id])->isSuccess();
-	}
+    public function getId(): int
+    {
+        return $this->id;
+    }
 
-	/**
-	 * @return int
-	 */
-	public function getId()
-	{
-		return $this->id;
-	}
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
 
+    public function setName(string $name): self
+    {
+        $this->name = $name;
 
-	/**
-	 * @return string
-	 */
-	public function getName(): string
-	{
-		return $this->name;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param string $name
-	 *
-	 * @return L2Domain
-	 */
-	public function setName(string $name)
-	{
-		$this->name = $name;
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
-		return $this;
-	}
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
 
-	/**
-	 * @return string
-	 */
-	public function getDescription(): string
-	{
-		return $this->description;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param string $description
-	 *
-	 * @return L2Domain
-	 */
-	public function setDescription(string $description)
-	{
-		$this->description = $description;
+    public function getSections(?bool $asObject = null): array
+    {
+        if (null === $this->sections) {
+            return [];
+        }
 
-		return $this;
-	}
+        $sections = [];
+        foreach ($this->sections as $section) {
+            $sections[] = self::getAsObjectOrID($section, Section::class, $asObject);
+        }
+        $this->sections = $sections;
 
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return array
-	 */
-	public function getSections(bool $asObject = null)
-	{
-		$sections = [];
-		foreach ($this->sections as $section)
-		{
-			$sections[] = self::getAsObjectOrID($section, Section::class, $asObject);
-		}
-		$this->sections = $sections;
+        return $this->sections;
+    }
 
-		return $this->sections;
-	}
+    public function setSections(array $sections): self
+    {
+        $this->sections = $sections;
 
-	/**
-	 * @param array $sections
-	 *
-	 * @return L2Domain
-	 */
-	public function setSections(array $sections)
-	{
-		$this->sections = $sections;
+        return $this;
+    }
 
-		return $this;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getEditDate(): string
-	{
-		return $this->editDate;
-	}
+    public function getEditDate(): ?string
+    {
+        return $this->editDate;
+    }
 }

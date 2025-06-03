@@ -1,648 +1,444 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Oliver
- * Date: 07.01.2018
- * Time: 22:18
- */
 
-namespace colq2\PhpIPAMClient\Controller;
+declare(strict_types=1);
 
+namespace SherinBloemendaal\PhpIPAMClient\Controller;
 
-use colq2\PhpIPAMClient\Exception\PhpIPAMRequestException;
+use SherinBloemendaal\PhpIPAMClient\Exception\PhpIPAMRequestException;
 
 class Subnet extends BaseController
 {
-
-	protected static $controllerName = 'subnets';
-
-	protected $id;
-	protected $subnet;
-	protected $mask;
-	protected $description;
-	protected $sectionId;
-	protected $linked_subnet;
-	protected $vlanId;
-	protected $vrfId;
-	protected $masterSubnetId;
-	protected $nameserverId;
-	protected $showName;
-	protected $permissions;
-	protected $DNSrecursive;
-	protected $DNSrecords;
-	protected $allowRequests;
-	protected $scanAgent;
-	protected $pingSubnet;
-	protected $discoverSubnet;
-	protected $isFolder;
-	protected $isFull;
-	protected $state;
-	protected $threshold;
-	protected $location;
-	protected $editDate;
-
-	protected static function transformParamsToIDs(array $params): array
-	{
-		//sectionId, linked_subnet, vlanId, vrfId, masterSubnetId
-		$params = self::getIDFromParams($params, 'sectionId', ['sectionID', 'section'], Section::class);
-		$params = self::getIDFromParams($params, 'linked_subnet', ['linked_subnetId'], Subnet::class);
-		$params = self::getIDFromParams($params, 'vlanId', ['vlanID', 'vlan'], VLAN::class);
-		$params = self::getIDFromParams($params, 'vrfId', ['vrfID', 'vrf'], VRF::class);
-
-		return $params;
-	}
-
-	public static function getAll()
-	{
-		$response = static::_getStatic(['all']);
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
-		$objects = [];
-
-		foreach ($response->getData() as $object)
-		{
-			$objects[] = new static($object);
-		}
-
-		return $objects;
-	}
-
-	public function getUsage()
-	{
-		return self::_getStatic([$this->id, 'usage'])->getData();
-	}
-
-	public function getFirstFree()
-	{
-		return $this->_get([$this->id, 'first_free'])->getData();
-	}
-
-	public function getSlaves()
-	{
-		$slaves  = $this->_get([$this->id, 'slaves'])->getData();
-		$subnets = [];
-
-		foreach ($slaves as $slave)
-		{
-			$subnets[] = new Subnet($slave);
-		}
-
-		return $subnets;
-	}
-
-	public function getSlavesRecursive()
-	{
-		$slaves  = $this->_get([$this->id, 'slaves_recursive'])->getData();
-		$subnets = [];
-
-		foreach ($slaves as $slave)
-		{
-			$subnets[] = new Subnet($slave);
-		}
-
-		return $subnets;
-	}
-
-	public function getAddresses()
-	{
-		$addresses    = $this->_get([$this->id, 'addresses']);
-		$addressesArr = [];
-		foreach ($addresses as $address)
-		{
-			$addressesArr[] = new Address($address);
-		}
-
-	}
-
-	public function getAddressesIP(string $ip)
-	{
-		$response = $this->_get([$this->id, 'addresses', $ip]);
-		if (is_null($response->getData()))
-		{
-			throw new PhpIPAMRequestException($response);
-		}
-		else
-		{
-			$data = array_values($response->getData());
-
-			return new Address($data[0]);
-		}
-	}
-
-	public function getFirstSubnet(int $mask)
-	{
-		return $this->_get([$this->id, 'first_subnet', $mask])->getData();
-	}
-
-	public function getAllSubnets(int $mask)
-	{
-		return $this->_get([$this->id, 'all_subnets', $mask])->getData();
-	}
-
-	public function getCustomFields()
-	{
-		return $this->_get(['custom_fields'])->getData();
-	}
-
-	public function getCIDRSearch(string $subnet)
-	{
-		return $this->_get(['cidr', $subnet])->getData();
-	}
-
-	public function getSearch(string $subnet)
-	{
-		return $this->_get(['search', $subnet])->getData();
-	}
-
-	public function postFirstSubnet(int $mask): Subnet
-	{
-		$response = $this->_post([$this->id, 'first_subnet', $mask]);
-		dd($response);
-		$id = $response->getBody()['id'];
-
-		return Subnet::getByID($id);
-	}
-
-	public function patchResize(int $mask)
-	{
-		try
-		{
-			$this->_patch([$this->id, 'resize'], ['mask' => $mask]);
-		}
-		catch (PhpIPAMRequestException $e)
-		{
-			if ($e->getMessage() == "New network is same as old network")
-			{
-				return true;
-			}
-			else
-			{
-				throw $e;
-			}
-		}
-
-		$this->setParams(Subnet::getByID($this->id)->getParams());
-
-		return true;
-	}
-
-	public function patchSplit(int $number)
-	{
-		return $this->_patch([$this->id, 'split'], ['number' => $number])->isSuccess();
-	}
-
-	public function deleteTruncate()
-	{
-		return $this->_delete([$this->id, 'truncate'])->isSuccess();
-	}
-
-	public function deletePermissions()
-	{
-		return $this->_delete([$this->id, 'permissions'])->isSuccess();
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getId(): int
-	{
-		return $this->id;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getSubnet(): string
-	{
-		return $this->subnet;
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getMask(): int
-	{
-		return $this->mask;
-	}
-
-	/**
-	 * @param int $mask
-	 *
-	 * @return Subnet
-	 */
-	public function setMask(int $mask)
-	{
-		$this->mask = $mask;
-
-		return $this;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getDescription(): string
-	{
-		return $this->description;
-	}
-
-	/**
-	 * @param string $description
-	 *
-	 * @return Subnet
-	 */
-	public function setDescription(string $description)
-	{
-		$this->description = $description;
-
-		return $this;
-	}
-
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return int|Section
-	 */
-	public function getSectionId(bool $asObject = null)
-	{
-		return self::getAsObjectOrID($this->sectionId, Section::class, $asObject);
-	}
-
-	/**
-	 * @param int|Section $sectionId
-	 *
-	 * @return Subnet
-	 */
-	public function setSectionId($sectionId)
-	{
-		$this->sectionId = $sectionId;
-
-		return $this;
-	}
-
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return int|Subnet|null
-	 */
-	public function getLinkedSubnet(bool $asObject = null)
-	{
-		return self::getAsObjectOrID($this->linked_subnet, Subnet::class, $asObject);
-	}
-
-	/**
-	 * @param int|Subnet $linked_subnet
-	 *
-	 * @return Subnet
-	 */
-	public function setLinkedSubnet($linked_subnet)
-	{
-		$this->linked_subnet = $linked_subnet;
-
-		return $this;
-	}
-
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return int|VLAN|null
-	 */
-	public function getVlanId(bool $asObject = null)
-	{
-		return self::getAsObjectOrID($this->vlanId, VLAN::class, $asObject);
-	}
-
-	/**
-	 * @param int|VLAN $vlanId
-	 *
-	 * @return Subnet
-	 */
-	public function setVlanId($vlanId)
-	{
-		$this->vlanId = $vlanId;
-
-		return $this;
-	}
-
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return int|VRF|null
-	 */
-	public function getVrfId(bool $asObject = true)
-	{
-		return self::getAsObjectOrID($this->vrfId, VRF::class, $asObject);
-	}
-
-	/**
-	 * @param int|VRF $vrfId
-	 *
-	 * @return Subnet
-	 */
-	public function setVrfId($vrfId)
-	{
-		$this->vrfId = $vrfId;
-
-		return $this;
-	}
-
-	/**
-	 * @param bool|null $asObject
-	 *
-	 * @return int|Subnet|null
-	 */
-	public function getMasterSubnetId(bool $asObject = null)
-	{
-		return self::getAsObjectOrID($this->masterSubnetId, Subnet::class, $asObject);
-	}
-
-	/**
-	 * @param int|Subnet $masterSubnetId
-	 *
-	 * @return Subnet
-	 */
-	public function setMasterSubnetId($masterSubnetId)
-	{
-		$this->masterSubnetId = $masterSubnetId;
-
-		return $this;
-	}
-
-	/**
-	 * @return int|null
-	 */
-	public function getNameserverId()
-	{
-		return $this->nameserverId;
-	}
-
-	/**
-	 * @param int|null $nameserverId
-	 *
-	 * @return Subnet
-	 */
-	public function setNameserverId(int $nameserverId)
-	{
-		$this->nameserverId = $nameserverId;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getShowName(): bool
-	{
-		return $this->showName;
-	}
-
-	/**
-	 * @param bool $showName
-	 *
-	 * @return Subnet
-	 */
-	public function setShowName(bool $showName)
-	{
-		$this->showName = $showName;
-
-		return $this;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getPermissions(): string
-	{
-		return $this->permissions;
-	}
-
-	/**
-	 * @param string $permissions
-	 *
-	 * @return Subnet
-	 */
-	public function setPermissions(string $permissions)
-	{
-		$this->permissions = $permissions;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getDNSrecursive(): bool
-	{
-		return $this->DNSrecursive;
-	}
-
-	/**
-	 * @param bool $DNSrecursive
-	 *
-	 * @return Subnet
-	 */
-	public function setDNSrecursive(bool $DNSrecursive)
-	{
-		$this->DNSrecursive = $DNSrecursive;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getDNSrecords(): bool
-	{
-		return $this->DNSrecords;
-	}
-
-	/**
-	 * @param bool $DNSrecords
-	 *
-	 * @return Subnet
-	 */
-	public function setDNSrecords(bool $DNSrecords)
-	{
-		$this->DNSrecords = $DNSrecords;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getAllowRequests(): bool
-	{
-		return $this->allowRequests;
-	}
-
-	/**
-	 * @param bool $allowRequests
-	 *
-	 * @return Subnet
-	 */
-	public function setAllowRequests(bool $allowRequests)
-	{
-		$this->allowRequests = $allowRequests;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getScanAgent(): bool
-	{
-		return $this->scanAgent;
-	}
-
-	/**
-	 * @param bool $scanAgent
-	 *
-	 * @return Subnet
-	 */
-	public function setScanAgent(bool $scanAgent)
-	{
-		$this->scanAgent = $scanAgent;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getPingSubnet(): bool
-	{
-		return $this->pingSubnet;
-	}
-
-	/**
-	 * @param bool $pingSubnet
-	 *
-	 * @return Subnet
-	 */
-	public function setPingSubnet(bool $pingSubnet)
-	{
-		$this->pingSubnet = $pingSubnet;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getDiscoverSubnet(): bool
-	{
-		return $this->discoverSubnet;
-	}
-
-	/**
-	 * @param bool $discoverSubnet
-	 *
-	 * @return Subnet
-	 */
-	public function setDiscoverSubnet(bool $discoverSubnet)
-	{
-		$this->discoverSubnet = $discoverSubnet;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getIsFolder(): bool
-	{
-		return $this->isFolder;
-	}
-
-	/**
-	 * @param bool $isFolder
-	 *
-	 * @return Subnet
-	 */
-	public function setIsFolder(bool $isFolder)
-	{
-		$this->isFolder = $isFolder;
-
-		return $this;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function getIsFull(): bool
-	{
-		return $this->isFull;
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getState(): int
-	{
-		return $this->state;
-	}
-
-	/**
-	 * @param int $state
-	 *
-	 * @return Subnet
-	 */
-	public function setState(int $state)
-	{
-		$this->state = $state;
-
-		return $this;
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getThreshold(): int
-	{
-		return $this->threshold;
-	}
-
-	/**
-	 * @param int $threshold
-	 *
-	 * @return Subnet
-	 */
-	public function setThreshold(int $threshold)
-	{
-		$this->threshold = $threshold;
-
-		return $this;
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getLocation(): int
-	{
-		return $this->location;
-	}
-
-	/**
-	 * @param int $location
-	 *
-	 * @return Subnet
-	 */
-	public function setLocation(int $location)
-	{
-		$this->location = $location;
-
-		return $this;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getEditDate(): string
-	{
-		return $this->editDate;
-	}
-
+    protected static string $controllerName = 'subnets';
+
+    protected int $id;
+    protected ?string $subnet;
+    protected ?int $mask;
+    protected ?string $description;
+    protected ?int $sectionId;
+    protected ?int $linked_subnet;
+    protected ?int $vlanId;
+    protected ?int $vrfId;
+    protected ?int $masterSubnetId;
+    protected ?int $nameserverId;
+    protected ?bool $showName;
+    protected ?string $permissions;
+    protected ?bool $DNSrecursive;
+    protected ?bool $DNSrecords;
+    protected ?bool $allowRequests;
+    protected ?bool $scanAgent;
+    protected ?bool $pingSubnet;
+    protected ?bool $discoverSubnet;
+    protected ?bool $isFolder;
+    protected ?bool $isFull;
+    protected ?int $state;
+    protected ?int $threshold;
+    protected ?int $location;
+    protected ?string $editDate;
+
+    protected static function transformParamsToIDs(array $params): array
+    {
+        // sectionId, linked_subnet, vlanId, vrfId, masterSubnetId
+        $params = self::getIDFromParams($params, 'sectionId', ['sectionID', 'section'], Section::class);
+        $params = self::getIDFromParams($params, 'linked_subnet', ['linked_subnetId'], self::class);
+        $params = self::getIDFromParams($params, 'vlanId', ['vlanID', 'vlan'], VLAN::class);
+
+        return self::getIDFromParams($params, 'vrfId', ['vrfID', 'vrf'], VRF::class);
+    }
+
+    public static function getAll(): array
+    {
+        $response = static::_getStatic(['all']);
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
+        $objects = [];
+
+        foreach ($response->getData() as $object) {
+            $objects[] = new static($object);
+        }
+
+        return $objects;
+    }
+
+    public function getUsage(): mixed
+    {
+        return self::_getStatic([$this->id, 'usage'])->getData();
+    }
+
+    public function getFirstFree(): mixed
+    {
+        return $this->_get([$this->id, 'first_free'])->getData();
+    }
+
+    public function getSlaves(): array
+    {
+        $slaves = $this->_get([$this->id, 'slaves'])->getData();
+        $subnets = [];
+
+        foreach ($slaves as $slave) {
+            $subnets[] = new self($slave);
+        }
+
+        return $subnets;
+    }
+
+    public function getSlavesRecursive(): array
+    {
+        $slaves = $this->_get([$this->id, 'slaves_recursive'])->getData();
+        $subnets = [];
+
+        foreach ($slaves as $slave) {
+            $subnets[] = new self($slave);
+        }
+
+        return $subnets;
+    }
+
+    public function getAddresses(): array
+    {
+        $addresses = $this->_get([$this->id, 'addresses']);
+        $addressesArr = [];
+        foreach ($addresses->getData() as $address) {
+            $addressesArr[] = new Address($address);
+        }
+
+        return $addressesArr;
+    }
+
+    public function getAddressesIP(string $ip): Address
+    {
+        $response = $this->_get([$this->id, 'addresses', $ip]);
+        if (null === $response->getData()) {
+            throw new PhpIPAMRequestException($response);
+        }
+
+        $data = array_values($response->getData());
+
+        return new Address($data[0]);
+    }
+
+    public function getFirstSubnet(int $mask): mixed
+    {
+        return $this->_get([$this->id, 'first_subnet', $mask])->getData();
+    }
+
+    public function getAllSubnets(int $mask): mixed
+    {
+        return $this->_get([$this->id, 'all_subnets', $mask])->getData();
+    }
+
+    public function getCustomFields(): mixed
+    {
+        return $this->_get(['custom_fields'])->getData();
+    }
+
+    public function getCIDRSearch(string $subnet): mixed
+    {
+        return $this->_get(['cidr', $subnet])->getData();
+    }
+
+    public function getSearch(string $subnet): mixed
+    {
+        return $this->_get(['search', $subnet])->getData();
+    }
+
+    public function postFirstSubnet(int $mask): self
+    {
+        $response = $this->_post([$this->id, 'first_subnet', $mask]);
+        $id = $response->getBody()['id'];
+
+        return self::getByID($id);
+    }
+
+    public function patchResize(int $mask): bool
+    {
+        try {
+            $this->_patch([$this->id, 'resize'], ['mask' => $mask]);
+        } catch (PhpIPAMRequestException $e) {
+            if ('New network is same as old network' === $e->getMessage()) {
+                return true;
+            }
+
+            throw $e;
+        }
+
+        $this->setParams(self::getByID($this->id)->getParams());
+
+        return true;
+    }
+
+    public function patchSplit(int $number): bool
+    {
+        return $this->_patch([$this->id, 'split'], ['number' => $number])->isSuccess();
+    }
+
+    public function deleteTruncate(): bool
+    {
+        return $this->_delete([$this->id, 'truncate'])->isSuccess();
+    }
+
+    public function deletePermissions(): bool
+    {
+        return $this->_delete([$this->id, 'permissions'])->isSuccess();
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getSubnet(): ?string
+    {
+        return $this->subnet;
+    }
+
+    public function getMask(): ?int
+    {
+        return $this->mask;
+    }
+
+    public function setMask(int $mask): self
+    {
+        $this->mask = $mask;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getSectionId(?bool $asObject = null): int|Section|null
+    {
+        return self::getAsObjectOrID($this->sectionId, Section::class, $asObject);
+    }
+
+    public function setSectionId(int|Section|null $sectionId): self
+    {
+        $this->sectionId = $sectionId;
+
+        return $this;
+    }
+
+    public function getLinkedSubnet(?bool $asObject = null): int|self|null
+    {
+        return self::getAsObjectOrID($this->linked_subnet, self::class, $asObject);
+    }
+
+    public function setLinkedSubnet(int|self|null $linked_subnet): self
+    {
+        $this->linked_subnet = $linked_subnet;
+
+        return $this;
+    }
+
+    public function getVlanId(?bool $asObject = null): int|VLAN|null
+    {
+        return self::getAsObjectOrID($this->vlanId, VLAN::class, $asObject);
+    }
+
+    public function setVlanId(int|VLAN|null $vlanId): self
+    {
+        $this->vlanId = $vlanId;
+
+        return $this;
+    }
+
+    public function getVrfId(?bool $asObject = null): int|VRF|null
+    {
+        return self::getAsObjectOrID($this->vrfId, VRF::class, $asObject);
+    }
+
+    public function setVrfId(int|VRF|null $vrfId): self
+    {
+        $this->vrfId = $vrfId;
+
+        return $this;
+    }
+
+    public function getMasterSubnetId(?bool $asObject = null): int|self|null
+    {
+        return self::getAsObjectOrID($this->masterSubnetId, self::class, $asObject);
+    }
+
+    public function setMasterSubnetId(int|self|null $masterSubnetId): self
+    {
+        $this->masterSubnetId = $masterSubnetId;
+
+        return $this;
+    }
+
+    public function getNameserverId(): ?int
+    {
+        return $this->nameserverId;
+    }
+
+    public function setNameserverId(?int $nameserverId): self
+    {
+        $this->nameserverId = $nameserverId;
+
+        return $this;
+    }
+
+    public function getShowName(): ?bool
+    {
+        return $this->showName;
+    }
+
+    public function setShowName(bool $showName): self
+    {
+        $this->showName = $showName;
+
+        return $this;
+    }
+
+    public function getPermissions(): ?string
+    {
+        return $this->permissions;
+    }
+
+    public function setPermissions(string $permissions): self
+    {
+        $this->permissions = $permissions;
+
+        return $this;
+    }
+
+    public function getDNSrecursive(): ?bool
+    {
+        return $this->DNSrecursive;
+    }
+
+    public function setDNSrecursive(bool $DNSrecursive): self
+    {
+        $this->DNSrecursive = $DNSrecursive;
+
+        return $this;
+    }
+
+    public function getDNSrecords(): ?bool
+    {
+        return $this->DNSrecords;
+    }
+
+    public function setDNSrecords(bool $DNSrecords): self
+    {
+        $this->DNSrecords = $DNSrecords;
+
+        return $this;
+    }
+
+    public function getAllowRequests(): ?bool
+    {
+        return $this->allowRequests;
+    }
+
+    public function setAllowRequests(bool $allowRequests): self
+    {
+        $this->allowRequests = $allowRequests;
+
+        return $this;
+    }
+
+    public function getScanAgent(): ?bool
+    {
+        return $this->scanAgent;
+    }
+
+    public function setScanAgent(bool $scanAgent): self
+    {
+        $this->scanAgent = $scanAgent;
+
+        return $this;
+    }
+
+    public function getPingSubnet(): ?bool
+    {
+        return $this->pingSubnet;
+    }
+
+    public function setPingSubnet(bool $pingSubnet): self
+    {
+        $this->pingSubnet = $pingSubnet;
+
+        return $this;
+    }
+
+    public function getDiscoverSubnet(): ?bool
+    {
+        return $this->discoverSubnet;
+    }
+
+    public function setDiscoverSubnet(bool $discoverSubnet): self
+    {
+        $this->discoverSubnet = $discoverSubnet;
+
+        return $this;
+    }
+
+    public function getIsFolder(): ?bool
+    {
+        return $this->isFolder;
+    }
+
+    public function setIsFolder(bool $isFolder): self
+    {
+        $this->isFolder = $isFolder;
+
+        return $this;
+    }
+
+    public function getIsFull(): ?bool
+    {
+        return $this->isFull;
+    }
+
+    public function getState(): ?int
+    {
+        return $this->state;
+    }
+
+    public function setState(int $state): self
+    {
+        $this->state = $state;
+
+        return $this;
+    }
+
+    public function getThreshold(): ?int
+    {
+        return $this->threshold;
+    }
+
+    public function setThreshold(int $threshold): self
+    {
+        $this->threshold = $threshold;
+
+        return $this;
+    }
+
+    public function getLocation(): ?int
+    {
+        return $this->location;
+    }
+
+    public function setLocation(int $location): self
+    {
+        $this->location = $location;
+
+        return $this;
+    }
+
+    public function getEditDate(): ?string
+    {
+        return $this->editDate;
+    }
 }

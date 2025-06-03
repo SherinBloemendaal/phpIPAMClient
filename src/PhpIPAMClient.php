@@ -1,52 +1,47 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: sonyon
- * Date: 06.01.18
- * Time: 15:16
- */
 
-namespace colq2\PhpIPAMClient;
+declare(strict_types=1);
 
-use colq2\PhpIPAMClient\Connection\Connection;
+namespace SherinBloemendaal\PhpIPAMClient;
 
+use SherinBloemendaal\PhpIPAMClient\Connection\Connection;
 
 class PhpIPAMClient
 {
-	protected $connection;
+    protected Connection $connection;
 
-	public function __construct(string $url, string $appID, string $username, string $password, string $apiKey, string $securityMethod = Connection::SECURITY_METHOD_SSL)
-	{
-		$this->connection = Connection::initializeConnection($url, $appID, $username, $password, $apiKey, $securityMethod);
-	}
+    public function __construct(string $url, string $appID, string $username, string $password, string $apiKey, string $securityMethod = Connection::SECURITY_METHOD_SSL)
+    {
+        $this->connection = Connection::initializeConnection($url, $appID, $username, $password, $apiKey, $securityMethod);
+    }
 
-	public function call(string $method, string $controller, array $identifiers = array(), array $params = array())
-	{
-		return $this->connection->call($method, $controller, $identifiers, $params);
-	}
+    public function call(string $method, string $controller, array $identifiers = [], array $params = []): mixed
+    {
+        return $this->connection->call($method, $controller, $identifiers, $params);
+    }
 
-	public function getAllControllers()
-	{
-		return $this->call('OPTIONS', '')->getData();
-	}
+    public function getAllControllers(): mixed
+    {
+        return $this->call('OPTIONS', '')->getData();
+    }
 
+    public function getToken(): ?string
+    {
+        return $this->connection->getToken();
+    }
 
-	public function getToken()
-	{
-		return $this->connection->getToken();
-	}
+    public function getTokenExpires(): ?string
+    {
+        return $this->connection->getTokenExpires();
+    }
 
-	public function getTokenExpires()
-	{
-		return $this->connection->getTokenExpires();
-	}
-	public function getAllUsers()
-	{
-		return $this->call('get', 'user', ['all'])->getData();
-	}
+    public function getAllUsers(): mixed
+    {
+        return $this->call('get', 'user', ['all'])->getData();
+    }
 
-	public function getAllAdmins()
-	{
-		return $this->call('admins', 'user', ['all'])->getData();
-	}
+    public function getAllAdmins(): mixed
+    {
+        return $this->call('admins', 'user', ['all'])->getData();
+    }
 }

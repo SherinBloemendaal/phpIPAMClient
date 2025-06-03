@@ -1,197 +1,144 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: sonyon
- * Date: 09.01.18
- * Time: 11:34
- */
 
-namespace colq2\PhpIPAMClient\Controller;
+declare(strict_types=1);
 
+namespace SherinBloemendaal\PhpIPAMClient\Controller;
 
 class VLAN extends BaseController
 {
+    protected static string $controllerName = 'vlan';
 
-	protected static $controllerName = 'vlan';
+    protected int $vlanId;
+    protected ?int $domainId;
+    protected ?string $name;
+    protected ?int $number;
+    protected ?string $description;
+    protected ?string $editDate;
 
-	protected $vlanId;
-	protected $domainId;
-	protected $name;
-	protected $number;
-	protected $description;
-	protected $editDate;
+    protected static function transformParamsToIDs(array $params): array
+    {
+        return self::getIDFromParams($params, 'domainId', ['domainID', 'domain'], L2Domain::class);
+    }
 
-	protected static function transformParamsToIDs(array $params): array
-	{
-		$params = self::getIDFromParams($params, 'domainId', ['domainID', 'domain'], L2Domain::class);
+    public function getSubnets(): array
+    {
+        $response = $this->_get([$this->vlanId, 'subnets']);
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
 
-		return $params;
-	}
+        $subnets = [];
 
-	public function getSubnets()
-	{
-		$response = $this->_get([$this->id, 'subnets']);
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
+        foreach ($response->getData() as $subnet) {
+            $subnets[] = new Subnet($subnet);
+        }
 
-		$subnets = [];
+        return $subnets;
+    }
 
-		foreach ($response->getData() as $subnet)
-		{
-			$subnets[] = new Subnet($subnet);
-		}
+    public function getSubnetsInSection(int|Section $section): array
+    {
+        if ($section instanceof Section) {
+            $section = $section->getId();
+        }
 
-		return $subnets;
-	}
+        $response = $this->_get([$this->vlanId, 'subnets', $section]);
 
-	public function getSubnetsInSection($section)
-	{
-		if ($section instanceof Section)
-		{
-			$section = $section->getId();
-		}
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
 
-		$response = $this->_get([$this->id, 'subnets', $section]);
+        $subnets = [];
 
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
+        foreach ($response->getData() as $subnet) {
+            $subnets[] = new Subnet($subnet);
+        }
 
-		$subnets = [];
+        return $subnets;
+    }
 
-		foreach ($response->getData() as $subnet)
-		{
-			$subnets[] = new Subnet($subnet);
-		}
+    public function getCustomFields(): mixed
+    {
+        return $this->_get([$this->vlanId, 'custom_fields'])->getData();
+    }
 
-		return $subnets;
-	}
+    public function getSearch(int $number): array
+    {
+        $response = $this->_get([$this->vlanId, 'search', $number]);
 
-	public function getCustomFields()
-	{
-		return $this->_get([$this->id, 'custom_fields'])->getData();
-	}
+        if (null === $response->getData() || empty($response->getData())) {
+            return [];
+        }
 
-	public function getSearch(int $number)
-	{
-		$response = $this->_get([$this->id, 'search', $number]);
+        $vlans = [];
 
-		if (is_null($response->getData()) or empty($response->getData()))
-		{
-			return [];
-		}
+        foreach ($response->getData() as $vlan) {
+            $vlans[] = new self($vlan);
+        }
 
-		$vlans = [];
+        return $vlans;
+    }
 
-		foreach ($response->getData() as $vlan)
-		{
-			$vlans[] = new VLAN($vlan);
-		}
+    public function delete(): bool
+    {
+        return $this->_delete([], ['vlanId' => $this->getId()])->isSuccess();
+    }
 
-		return $vlans;
-	}
+    public function getId(): int
+    {
+        return $this->vlanId;
+    }
 
-	public function delete()
-	{
-		return $this->_delete([], ['vlanId' => $this->getId()])->isSuccess();
-	}
+    public function getDomainId(?bool $asObject = null): int|L2Domain|null
+    {
+        return self::getAsObjectOrID($this->domainId, L2Domain::class, $asObject);
+    }
 
-	/**
-	 * @return int
-	 */
-	public function getId()
-	{
-		return $this->vlanId;
-	}
+    public function setDomainId(int|L2Domain|null $domainId): self
+    {
+        $this->domainId = $domainId;
 
-	/**
-	 * @return int|L2Domain|null
-	 */
-	public function getDomainId()
-	{
-		return self::getAsObjectOrID($this->domainId, 'domainId', ['domainID', 'domain'], L2Domain::class);
-	}
+        return $this;
+    }
 
-	/**
-	 * @param int|L2Domain|null $domainId
-	 *
-	 * @return VLAN
-	 */
-	public function setDomainId($domainId)
-	{
-		$this->domainId = $domainId;
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
 
-		return $this;
-	}
+    public function setName(string $name): self
+    {
+        $this->name = $name;
 
-	/**
-	 * @return string
-	 */
-	public function getName(): string
-	{
-		return $this->name;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param string $name
-	 *
-	 * @return VLAN
-	 */
-	public function setName(string $name)
-	{
-		$this->name = $name;
+    public function getNumber(): ?int
+    {
+        return $this->number;
+    }
 
-		return $this;
-	}
+    public function setNumber(int $number): self
+    {
+        $this->number = $number;
 
-	/**
-	 * @return int
-	 */
-	public function getNumber(): int
-	{
-		return $this->number;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param int $number
-	 *
-	 * @return VLAN
-	 */
-	public function setNumber(int $number)
-	{
-		$this->number = $number;
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
-		return $this;
-	}
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
 
-	/**
-	 * @return string
-	 */
-	public function getDescription(): string
-	{
-		return $this->description;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param string $description
-	 *
-	 * @return VLAN
-	 */
-	public function setDescription(string $description)
-	{
-		$this->description = $description;
-
-		return $this;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getEditDate(): string
-	{
-		return $this->editDate;
-	}
+    public function getEditDate(): ?string
+    {
+        return $this->editDate;
+    }
 }

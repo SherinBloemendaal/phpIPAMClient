@@ -1,45 +1,39 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: sonyon
- * Date: 06.01.18
- * Time: 17:17
- */
 
-namespace colq2\PhpIPAMClient;
+declare(strict_types=1);
 
-use colq2\PhpIPAMClient\Connection\Connection;
+namespace SherinBloemendaal\PhpIPAMClient;
 
-function phpipamMakeURL($url, $scheme = 'https://'): string
+use SherinBloemendaal\PhpIPAMClient\Connection\Connection;
+
+function phpipamMakeURL(string $url, string $scheme = 'https://'): string
 {
-	$url = trim($url);
-	// Remove all to // like http:// or https://
-	$url = preg_replace("/^.+\/\//", "", $url);
-	//Set scheme
-//	$url = parse_url($url, PHP_URL_SCHEME) === null ? $scheme . $url : $url;
-	$url = $scheme . $url;
-	//Add last slash if not set
-	$url = phpipamAddLastSlash($url);
-	//check if add the end is api/ given
-	if (substr($url, -4) !== 'api/')
-	{
-		$url .= 'api/';
-	}
+    $url = trim($url);
+    // Remove all to // like http:// or https://
+    $url = preg_replace('/^.+\\/\\//', '', $url);
+    // Set scheme
+    //	$url = parse_url($url, PHP_URL_SCHEME) === null ? $scheme . $url : $url;
+    $url = $scheme.$url;
+    // Add last slash if not set
+    $url = phpipamAddLastSlash($url);
+    // check if add the end is api/ given
+    if ('api/' !== substr($url, -4)) {
+        $url .= 'api/';
+    }
 
-	return $url;
+    return $url;
 }
 
 function phpipamAddLastSlash(string $value): string
 {
-	if (substr($value, -1) !== '/')
-	{
-		$value .= '/';
-	}
+    if ('/' !== substr($value, -1)) {
+        $value .= '/';
+    }
 
-	return $value;
+    return $value;
 }
 
 function phpipamConnection(): Connection
 {
-	return Connection::getInstance();
+    return Connection::getInstance();
 }

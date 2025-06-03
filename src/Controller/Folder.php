@@ -1,15 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: sonyon
- * Date: 08.01.18
- * Time: 15:48
- */
 
-namespace colq2\PhpIPAMClient\Controller;
+declare(strict_types=1);
 
+namespace SherinBloemendaal\PhpIPAMClient\Controller;
 
 class Folder extends Subnet
 {
-	protected static $controllerName = 'folders';
+    protected static string $controllerName = 'folders';
 }
