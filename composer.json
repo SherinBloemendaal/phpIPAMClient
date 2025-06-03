@@ -1,5 +1,5 @@
 {
-    "name": "colq2/phpipam-client",
+  "name": "sherinbloemendaal/phpipam-client",
   "description": "A API Client for phpIPAM written in PHP",
   "keywords": [
     "phpipam",
@@ -15,16 +15,22 @@
       "email": "development@o-wycisk.de",
       "role": "Developer",
       "homepage": "https://o-wycisk.de"
+    },
+    {
+      "name": "Sherin Bloemendaal",
+      "email": "sherin@vitrion.nl",
+      "role": "Developer",
+      "homepage": "https://vitrion.nl"
     }
   ],
     "require": {
       "php": ">=8.0",
-        "guzzlehttp/guzzle": "^6.3",
-        "respect/validation": "1.1.15"
+      "guzzlehttp/guzzle": "^6.3",
+      "respect/validation": "1.1.15"
     },
     "autoload": {
         "psr-4": {
-          "colq2\\PhpIPAMClient\\": "src/"
+          "SherinBloemendaal\\PhpIPAMClient\\": "src/"
         },
         "files": [
             "src/helpers.php"
