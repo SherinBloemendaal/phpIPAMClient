@@ -31,7 +31,10 @@
   "autoload": {
     "psr-4": {
       "SherinBloemendaal\\PhpIPAMClient\\": "src/"
-    }
+    },
+    "files": [
+      "src/helpers.php"
+    ]
   },
   "minimum-stability": "dev",
   "require-dev": {
