@@ -113,8 +113,49 @@ abstract class BaseController
     protected function setParams(array $params): void
     {
         foreach ($params as $key => $value) {
-            $this->{$key} = $value;
+            if (!property_exists($this, $key)) {
+                continue;
+            }
+
+            $this->{$key} = $this->castValue($key, $value);
         }
+    }
+
+    private function castValue(string $key, mixed $value): mixed
+    {
+        if (null === $value) {
+            return null;
+        }
+
+        $property = new \ReflectionProperty($this, $key);
+        $type = $property->getType();
+
+        if (null === $type) {
+            return $value;
+        }
+
+        $typeName = $type instanceof \ReflectionNamedType
+            ? $type->getName()
+            : null;
+
+        if ($type instanceof \ReflectionUnionType) {
+            foreach ($type->getTypes() as $unionType) {
+                $name = $unionType->getName();
+                if (\in_array($name, ['int', 'string', 'bool', 'float', 'array'], true)) {
+                    $typeName = $name;
+                    break;
+                }
+            }
+        }
+
+        return match ($typeName) {
+            'int' => (int) $value,
+            'bool' => (bool) $value,
+            'float' => (float) $value,
+            'string' => (string) $value,
+            'array' => (array) $value,
+            default => $value,
+        };
     }
 
     /**
